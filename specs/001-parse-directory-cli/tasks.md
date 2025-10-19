@@ -32,9 +32,9 @@ This document provides a dependency-ordered task list for implementing the Parse
 
 **Tasks**:
 
-- [ ] T001 Initialize go.mod if not exists in repository root
-- [ ] T002 Create cli/ package directory
-- [ ] T003 Create path/ package directory
+- [X] T001 Initialize go.mod if not exists in repository root
+- [X] T002 Create cli/ package directory
+- [X] T003 Create path/ package directory
 
 **Completion Criteria**: Directory structure matches plan.md, `go.mod` exists with correct module name.
 
@@ -48,12 +48,12 @@ This document provides a dependency-ordered task list for implementing the Parse
 
 ### 2.1: TargetDirectory Entity (Foundation)
 
-- [ ] T004 [P] Implement TargetDirectory struct in path/validator.go with fields: InputPath, ResolvedPath, WasDefaulted
-- [ ] T005 [P] Implement NewTargetDirectory constructor in path/validator.go (handles empty string → os.Getwd)
-- [ ] T006 [P] Implement path resolution using filepath.Abs in path/validator.go
-- [ ] T007 [P] Implement directory validation using os.Stat in path/validator.go (existence, type, permissions)
-- [ ] T008 [P] Implement TargetDirectory.String() method in path/validator.go (returns ResolvedPath)
-- [ ] T009 [P] Implement TargetDirectory.LogDefaultBehavior() method in path/validator.go (writes to stderr if defaulted)
+- [X] T004 [P] Implement TargetDirectory struct in path/validator.go with fields: InputPath, ResolvedPath, WasDefaulted
+- [X] T005 [P] Implement NewTargetDirectory constructor in path/validator.go (handles empty string → os.Getwd)
+- [X] T006 [P] Implement path resolution using filepath.Abs in path/validator.go
+- [X] T007 [P] Implement directory validation using os.Stat in path/validator.go (existence, type, permissions)
+- [X] T008 [P] Implement TargetDirectory.String() method in path/validator.go (returns ResolvedPath)
+- [X] T009 [P] Implement TargetDirectory.LogDefaultBehavior() method in path/validator.go (writes to stderr if defaulted)
 
 **Completion Criteria**: `TargetDirectory` validates directories, resolves paths, handles empty input by defaulting to current directory.
 
@@ -75,18 +75,18 @@ This document provides a dependency-ordered task list for implementing the Parse
 
 ### 3.1: ParseCommand Entity (US1)
 
-- [ ] T010 [P] [US1] Implement ParseCommand struct in cli/parse_command.go with fields: TargetDirectory, OutputFile, IncludeTests
-- [ ] T011 [P] [US1] Implement flag parsing using flag.NewFlagSet in cli/parse_command.go (--output, --include-tests flags)
-- [ ] T012 [US1] Implement NewParseCommand constructor in cli/parse_command.go (calls NewTargetDirectory, validates flags)
-- [ ] T013 [P] [US1] Implement ParseCommand.Validate() method in cli/parse_command.go (validates OutputFile is non-empty)
-- [ ] T014 [P] [US1] Implement ParseCommand.Execute() method in cli/parse_command.go (placeholder, returns nil for now)
+- [X] T010 [P] [US1] Implement ParseCommand struct in cli/parse_command.go with fields: TargetDirectory, OutputFile, IncludeTests
+- [X] T011 [P] [US1] Implement flag parsing using flag.NewFlagSet in cli/parse_command.go (--output, --include-tests flags)
+- [X] T012 [US1] Implement NewParseCommand constructor in cli/parse_command.go (calls NewTargetDirectory, validates flags)
+- [X] T013 [P] [US1] Implement ParseCommand.Validate() method in cli/parse_command.go (validates OutputFile is non-empty)
+- [X] T014 [P] [US1] Implement ParseCommand.Execute() method in cli/parse_command.go (placeholder, returns nil for now)
 
 ### 3.2: Main CLI Entry Point (US1)
 
-- [ ] T015 [US1] Implement main() function in main.go with subcommand routing (check len(os.Args) >= 2)
-- [ ] T016 [US1] Implement "parse" subcommand case in main.go (calls NewParseCommand, handles errors, calls Execute)
-- [ ] T017 [US1] Implement error handling in main.go (write to stderr, exit code 1 for user errors)
-- [ ] T018 [US1] Implement unknown command handling in main.go (error message + usage, exit code 1)
+- [X] T015 [US1] Implement main() function in main.go with subcommand routing (check len(os.Args) >= 2)
+- [X] T016 [US1] Implement "parse" subcommand case in main.go (calls NewParseCommand, handles errors, calls Execute)
+- [X] T017 [US1] Implement error handling in main.go (write to stderr, exit code 1 for user errors)
+- [X] T018 [US1] Implement unknown command handling in main.go (error message + usage, exit code 1)
 
 **Completion Criteria**: Running `codegraph parse <directory> --output <file>` validates the directory, parses flags, and exits successfully if valid. Invalid inputs display specific error messages to stderr.
 
@@ -106,8 +106,8 @@ This document provides a dependency-ordered task list for implementing the Parse
 
 ### 4.1: Current Directory Default Behavior (US2)
 
-- [ ] T019 [US2] Add current directory default handling in cli/parse_command.go NewParseCommand (handle empty positional args)
-- [ ] T020 [US2] Call TargetDirectory.LogDefaultBehavior() in cli/parse_command.go after successful creation when defaulted
+- [X] T019 [US2] Add current directory default handling in cli/parse_command.go NewParseCommand (handle empty positional args)
+- [X] T020 [US2] Call TargetDirectory.LogDefaultBehavior() in cli/parse_command.go after successful creation when defaulted
 
 **Completion Criteria**: Running `codegraph parse --output file.graphml` (without directory) uses current directory and displays log message to stderr.
 
@@ -119,16 +119,16 @@ This document provides a dependency-ordered task list for implementing the Parse
 
 ### 5.1: Error Message Validation
 
-- [ ] T021 [P] Verify file-vs-directory error message matches spec format in path/validator.go: "Error: '[path]' is a file, not a directory"
-- [ ] T022 [P] Verify permission denied error message matches spec format in path/validator.go: "Error: permission denied accessing '[path]'"
-- [ ] T023 [P] Verify directory not exist error message matches spec format in path/validator.go: "directory does not exist: [path]"
-- [ ] T024 [P] Verify output flag validation error message in cli/parse_command.go: "--output flag requires a file path"
+- [X] T021 [P] Verify file-vs-directory error message matches spec format in path/validator.go: "Error: '[path]' is a file, not a directory"
+- [X] T022 [P] Verify permission denied error message matches spec format in path/validator.go: "Error: permission denied accessing '[path]'"
+- [X] T023 [P] Verify directory not exist error message matches spec format in path/validator.go: "directory does not exist: [path]"
+- [X] T024 [P] Verify output flag validation error message in cli/parse_command.go: "--output flag requires a file path"
 
 ### 5.2: Cross-Platform & Special Characters
 
-- [ ] T025 [P] Verify paths with spaces are handled correctly (Go's filepath handles this by default)
-- [ ] T026 [P] Verify unicode paths are handled correctly (Go's UTF-8 support handles this by default)
-- [ ] T027 [P] Verify symbolic links are followed (os.Stat does this by default, not os.Lstat)
+- [X] T025 [P] Verify paths with spaces are handled correctly (Go's filepath handles this by default)
+- [X] T026 [P] Verify unicode paths are handled correctly (Go's UTF-8 support handles this by default)
+- [X] T027 [P] Verify symbolic links are followed (os.Stat does this by default, not os.Lstat)
 
 **Completion Criteria**: All error messages match CLI contract specification. Edge cases (spaces, unicode, symlinks) work correctly per research.md decisions.
 
@@ -138,10 +138,10 @@ This document provides a dependency-ordered task list for implementing the Parse
 
 **Goal**: Ensure binary builds successfully and meets constitution standards.
 
-- [ ] T028 Build binary using `go build -o codegraph .` from repository root
-- [ ] T029 Verify binary runs with --help flag: `./codegraph parse --help` shows usage
-- [ ] T030 Verify binary handles missing command: `./codegraph` shows usage message
-- [ ] T031 Review code for constitution compliance (variable naming, function size, idiomatic Go)
+- [X] T028 Build binary using `go build -o codegraph .` from repository root
+- [X] T029 Verify binary runs with --help flag: `./codegraph parse --help` shows usage
+- [X] T030 Verify binary handles missing command: `./codegraph` shows usage message
+- [X] T031 Review code for constitution compliance (variable naming, function size, idiomatic Go)
 
 **Completion Criteria**: Binary builds, runs, displays help text. Code follows all constitution principles.
 
