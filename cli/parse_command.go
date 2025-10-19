@@ -77,8 +77,10 @@ func (pc *ParseCommand) Execute() error {
 		}
 
 		totalFiles += len(pkg.GoFiles)
-		// Module path detection assumes all packages in the directory
-		// belong to the same Go module. Uses the first non-nil Module found.
+		// Module path detection assumes all packages belong to the same Go module.
+		// Uses the first non-nil Module found.
+		// LIMITATION: Multi-module repositories (monorepos) are not supported.
+		// Only the first discovered module path will be displayed in the summary.
 		if pkg.Module != nil && modulePath == "" {
 			modulePath = pkg.Module.Path
 		}
