@@ -1,23 +1,19 @@
 <!--
 Sync Impact Report:
-Version: 0.0.0 → 1.0.0
-Rationale: Initial constitution creation (MAJOR version for first release)
+Version: 1.0.0 → 1.1.0
+Rationale: MINOR version bump - Added new principle (Dependency Management)
 
 Modified principles:
-- NEW: Clear Variable Naming
-- NEW: Function Size Discipline
-- NEW: Domain-Driven Design
-- NEW: Go Idiomatic Practices
-- NEW: Simplicity Principles (KISS & YAGNI)
-- NEW: Git Commit Standards
-- NEW: Package Naming Conventions
+- None (existing principles unchanged)
 
 Added sections:
-- Core Principles (7 principles)
-- Governance
+- NEW: Principle VIII - Dependency Management (Standard Library First)
+
+Removed sections:
+- None
 
 Templates requiring updates:
-✅ plan-template.md - Constitution Check section already present
+✅ plan-template.md - No constitution-specific updates needed (Constitution Check section already present)
 ✅ spec-template.md - No constitution-specific updates needed
 ✅ tasks-template.md - No constitution-specific updates needed
 
@@ -117,6 +113,33 @@ token := parser_utilities.ParserToken{}
 
 **Rationale**: Go encourages package-qualified identifiers. Short, descriptive package names reduce stutter (`parser.Parser` is fine, `parser.ParserParser` is not) and improve readability across the codebase.
 
+### VIII. Dependency Management (Standard Library First)
+
+Favor the Go standard library for all functionality. External dependencies MUST be justified and used only when the standard library is insufficient or would require excessive implementation effort.
+
+**Rules**:
+- Prefer `net/http` over web frameworks unless complex routing/middleware required
+- Prefer `encoding/json`, `encoding/xml` over third-party serialization libraries
+- Prefer `go/parser`, `go/ast` over external code analysis tools
+- Use standard `testing` package unless advanced features (mocking, BDD) are essential
+- Document dependency justification in commit message or design docs
+
+**When External Dependencies Are Acceptable**:
+- Standard library lacks the functionality entirely (e.g., GraphQL, gRPC code generation)
+- Implementing from scratch would create significant maintenance burden (e.g., JWT parsing, complex cryptography)
+- Well-established, actively maintained libraries that solve complex domain problems (e.g., database drivers, cloud SDKs)
+
+**Example Justification**:
+```go
+// Using standard library (preferred)
+import "net/http"
+
+// Using external dependency (must justify)
+import "github.com/gorilla/mux"  // JUSTIFIED: Complex routing with middleware chaining and path parameters beyond net/http ServeMux
+```
+
+**Rationale**: External dependencies introduce maintenance burden, security risks, version conflicts, and upgrade complexity. The Go standard library is stable, well-documented, and maintained by the Go team. Minimizing dependencies reduces attack surface and simplifies long-term maintenance.
+
 ## Governance
 
 This constitution supersedes all other coding practices and preferences. All code reviews, pull requests, and design decisions MUST verify compliance with these principles.
@@ -138,4 +161,4 @@ When a principle must be violated (e.g., performance-critical code requires comp
 - Regular audits to identify drift from principles
 - Constitution alignment checked in planning phase (see plan-template.md)
 
-**Version**: 1.0.0 | **Ratified**: 2025-10-19 | **Last Amended**: 2025-10-19
+**Version**: 1.1.0 | **Ratified**: 2025-10-19 | **Last Amended**: 2025-10-19
