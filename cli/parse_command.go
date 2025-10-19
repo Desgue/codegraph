@@ -3,7 +3,10 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"os"
+	"strings"
 
+	"github.com/Desgue/codegraph/parser"
 	"github.com/Desgue/codegraph/path"
 )
 
@@ -54,5 +57,47 @@ func (pc *ParseCommand) Validate() error {
 }
 
 func (pc *ParseCommand) Execute() error {
+	pkgs, err := parser.Load(pc.TargetDirectory.Path)
+	if err != nil {
+		return err
+	}
+
+	totalPackages := len(pkgs)
+	totalFiles := 0
+	errorCount := 0
+	var modulePath string
+
+	for _, pkg := range pkgs {
+		// Skip synthetic test binary packages (e.g., package.test)
+		if strings.HasSuffix(pkg.PkgPath, ".test") {
+			continue
+		}
+
+		fmt.Printf("\nPackage: %s\n", pkg.PkgPath)
+		fmt.Printf("  Name: %s\n", pkg.Name)
+		fmt.Printf("  Files (%d):\n", len(pkg.GoFiles))
+		for _, file := range pkg.GoFiles {
+			fmt.Printf("    - %s\n", file)
+		}
+		if len(pkg.Errors) > 0 {
+			fmt.Printf("  Errors: %d\n", len(pkg.Errors))
+		}
+
+		totalFiles += len(pkg.GoFiles)
+		errorCount += len(pkg.Errors)
+		if pkg.Module != nil && modulePath == "" {
+			modulePath = pkg.Module.Path
+		}
+	}
+
+	fmt.Printf("\n")
+	if modulePath != "" {
+		fmt.Printf("Module: %s\n", modulePath)
+	}
+	fmt.Printf("Loaded %d packages, parsed %d files\n", totalPackages, totalFiles)
+	if errorCount > 0 {
+		fmt.Fprintf(os.Stderr, "Encountered %d parse errors\n", errorCount)
+	}
+
 	return nil
 }
