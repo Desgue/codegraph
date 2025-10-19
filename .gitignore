@@ -28,3 +28,10 @@ coverage.txt
 # OS
 .DS_Store
 Thumbs.db
+
+
+# Personal folders
+.llm-docs/
+
+# Build output
+/bin/
