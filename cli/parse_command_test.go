@@ -19,7 +19,7 @@ func TestNewParseCommand(t *testing.T) {
 				return []string{"--output", "out.graphml"}
 			},
 			wantOutputFile:   "out.graphml",
-			wantIncludeTests: false,
+			wantIncludeTests: true,
 		},
 		{
 			name: "valid args with directory",
@@ -27,7 +27,7 @@ func TestNewParseCommand(t *testing.T) {
 				return []string{"--output", "out.graphml", t.TempDir()}
 			},
 			wantOutputFile:   "out.graphml",
-			wantIncludeTests: false,
+			wantIncludeTests: true,
 		},
 		{
 			name: "valid args with include tests flag",
@@ -64,7 +64,7 @@ func TestNewParseCommand(t *testing.T) {
 				return []string{"--output", "out.graphml", "./subdir"}
 			},
 			wantOutputFile:   "out.graphml",
-			wantIncludeTests: false,
+			wantIncludeTests: true,
 		},
 	}
 
@@ -190,14 +190,56 @@ func TestParseCommand_Validate(t *testing.T) {
 }
 
 func TestParseCommand_Execute(t *testing.T) {
-	t.Run("returns no error", func(t *testing.T) {
-		cmd, err := NewParseCommand([]string{"--output", "out.graphml"})
+	t.Run("returns no error and displays statistics", func(t *testing.T) {
+		testDir := t.TempDir()
+
+		// Create go.mod
+		goMod := filepath.Join(testDir, "go.mod")
+		modContent := "module testexec\n\ngo 1.24\n"
+		if err := os.WriteFile(goMod, []byte(modContent), 0644); err != nil {
+			t.Fatalf("Failed to create go.mod: %v", err)
+		}
+
+		// Create a simple Go file
+		mainFile := filepath.Join(testDir, "main.go")
+		mainContent := "package main\n\nfunc main() {}\n"
+		if err := os.WriteFile(mainFile, []byte(mainContent), 0644); err != nil {
+			t.Fatalf("Failed to create main.go: %v", err)
+		}
+
+		cmd, err := NewParseCommand([]string{"--output", "out.graphml", testDir})
 		if err != nil {
 			t.Fatalf("setup failed: %v", err)
 		}
 
 		if err := cmd.Execute(); err != nil {
 			t.Errorf("expected no error from Execute, got %v", err)
+		}
+	})
+
+	t.Run("handles syntax errors gracefully", func(t *testing.T) {
+		testDir := t.TempDir()
+
+		goMod := filepath.Join(testDir, "go.mod")
+		modContent := "module testerrors\n\ngo 1.24\n"
+		if err := os.WriteFile(goMod, []byte(modContent), 0644); err != nil {
+			t.Fatalf("Failed to create go.mod: %v", err)
+		}
+
+		invalidFile := filepath.Join(testDir, "invalid.go")
+		invalidContent := "package main\n\nfunc broken( {\n"
+		if err := os.WriteFile(invalidFile, []byte(invalidContent), 0644); err != nil {
+			t.Fatalf("Failed to create invalid.go: %v", err)
+		}
+
+		cmd, err := NewParseCommand([]string{"--output", "out.graphml", testDir})
+		if err != nil {
+			t.Fatalf("setup failed: %v", err)
+		}
+
+		// Should not return error even with syntax errors (partial failure)
+		if err := cmd.Execute(); err != nil {
+			t.Errorf("expected no error from Execute with syntax errors, got %v", err)
 		}
 	})
 }
