@@ -1,0 +1,232 @@
+# Quickstart: Parse Directory CLI
+
+**Feature**: 001-parse-directory-cli | **Date**: 2025-10-19
+
+## For Developers
+
+### Prerequisites
+- Go 1.21+ installed
+- Basic understanding of Go's `flag` package
+- Familiarity with Go testing
+
+### Project Structure
+```
+codegraph/
+├── main.go                  # CLI entry point
+├── cli/
+│   ├── parse_command.go     # ParseCommand domain entity
+│   └── parse_command_test.go
+├── path/
+│   ├── validator.go         # TargetDirectory validation logic
+│   └── validator_test.go
+└── go.mod
+```
+
+### Building the CLI
+
+```bash
+# From repository root
+go build -o codegraph .
+```
+
+This produces a binary named `codegraph` in the current directory.
+
+### Running Tests
+
+```bash
+# Run all tests
+go test ./...
+
+# Run with verbose output
+go test -v ./...
+
+# Run with coverage
+go test -cover ./...
+
+# Run specific package
+go test ./cli
+go test ./path
+```
+
+### Key Implementation Files
+
+1. **main.go**: Entry point, subcommand routing
+2. **cli/parse_command.go**: `ParseCommand` entity (flag parsing, command validation)
+3. **path/validator.go**: `TargetDirectory` entity (directory validation, path resolution)
+
+### Development Workflow
+
+1. **Make changes** to code
+2. **Run tests** to verify: `go test ./...`
+3. **Build binary**: `go build -o codegraph .`
+4. **Manual test**: `./codegraph parse [args]`
+5. **Commit**: Follow Conventional Commits format
+
+---
+
+## For Users
+
+### Installation
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd codegraph
+
+# Build binary
+go build -o codegraph .
+
+# Optional: Move to PATH
+mv codegraph /usr/local/bin/  # Unix/Linux/macOS
+```
+
+### Basic Usage
+
+#### Parse a Specific Directory
+```bash
+./codegraph parse /path/to/project --output graph.graphml
+```
+
+#### Parse Current Directory
+```bash
+cd /path/to/project
+./codegraph parse --output graph.graphml
+```
+
+Output:
+```
+No directory specified, using current directory: /path/to/project
+```
+
+#### Include Test Files
+```bash
+./codegraph parse /path/to/project --output graph.graphml --include-tests
+```
+
+### Common Scenarios
+
+#### Scenario 1: Analyze a Go Project
+```bash
+./codegraph parse ~/myproject --output myproject-graph.graphml
+```
+
+#### Scenario 2: Quick Analysis of Current Directory
+```bash
+cd ~/myproject
+./codegraph parse --output output.graphml
+```
+
+#### Scenario 3: Using Relative Paths
+```bash
+./codegraph parse ../other-project --output other.graphml
+```
+
+### Getting Help
+
+```bash
+./codegraph parse --help
+```
+
+Output:
+```
+Usage of parse:
+  -output string
+        Output file path (required)
+  -include-tests
+        Include test files in parsing
+```
+
+---
+
+## Troubleshooting
+
+### Error: "directory does not exist"
+
+**Problem**: The directory path you provided doesn't exist.
+
+**Solution**:
+- Verify the path is correct: `ls /path/to/directory`
+- Use absolute path: `./codegraph parse /absolute/path --output out.graphml`
+- Check for typos in path
+
+---
+
+### Error: "is a file, not a directory"
+
+**Problem**: You provided a file path instead of a directory.
+
+**Solution**:
+- Provide the directory containing the file: `./codegraph parse /path/to/directory --output out.graphml`
+
+---
+
+### Error: "permission denied accessing"
+
+**Problem**: You don't have read permissions for the directory.
+
+**Solution**:
+- Check directory permissions: `ls -ld /path/to/directory`
+- Run with appropriate permissions or choose a different directory
+
+---
+
+### Error: "--output flag requires a file path"
+
+**Problem**: You didn't provide the required `--output` flag.
+
+**Solution**:
+```bash
+./codegraph parse /path/to/dir --output graph.graphml
+```
+
+---
+
+## Examples
+
+### Example 1: Standard Usage
+```bash
+$ ./codegraph parse /home/user/myproject --output myproject.graphml
+```
+**Result**: Validates `/home/user/myproject` is a directory, stores output path.
+
+---
+
+### Example 2: Current Directory with Default Behavior
+```bash
+$ cd /home/user/myproject
+$ ./codegraph parse --output output.graphml
+```
+**Result**:
+- Uses current directory (`/home/user/myproject`)
+- Logs to stderr: `No directory specified, using current directory: /home/user/myproject`
+
+---
+
+### Example 3: Relative Path
+```bash
+$ ./codegraph parse ./src --output src-graph.graphml
+```
+**Result**: Resolves `./src` to absolute path, validates directory.
+
+---
+
+### Example 4: Symbolic Link
+```bash
+$ ln -s /real/project /tmp/link
+$ ./codegraph parse /tmp/link --output graph.graphml
+```
+**Result**: Follows symlink to `/real/project`, validates actual directory.
+
+---
+
+## Next Steps
+
+**Current Implementation**: Validation-only (flags and directory validation)
+
+**Future Features**:
+1. Actual directory parsing (traverse Go files)
+2. AST analysis (extract code structure)
+3. Graph building (create relationships)
+4. GraphML export (write to output file)
+
+**For Developers**: See `specs/001-parse-directory-cli/tasks.md` (generated by `/speckit.tasks`) for implementation tasks.
