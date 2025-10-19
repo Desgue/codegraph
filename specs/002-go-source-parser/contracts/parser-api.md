@@ -13,19 +13,23 @@ The parser package provides Go source code parsing functionality using `golang.o
 ### Load Function
 
 ```go
-func Load(targetDir string) (*Result, error)
+func Load(targetDir string, includeTests bool) ([]*packages.Package, int, error)
 ```
 
-**Description**: Parses all Go packages in the target directory and returns aggregated results.
+**Description**: Parses all Go packages in the target directory and returns packages with error count.
 
 **Parameters**:
 - `targetDir` (string): Absolute path to directory containing Go source code
   - Must be a valid directory path
   - Must have read permissions
   - Should be pre-validated by `path.TargetDirectory`
+- `includeTests` (bool): Whether to include test files in parsing
+  - `true`: Parses both production and test files
+  - `false`: Parses only production files
 
 **Returns**:
-- `*Result`: Parsing results with statistics and package data
+- `[]*packages.Package`: Slice of parsed packages, sorted by import path
+- `int`: Number of packages with errors (from `packages.PrintErrors()`)
 - `error`: Non-nil only for catastrophic failures (pattern parsing, driver issues)
 
 **Behavior**:
@@ -34,10 +38,13 @@ func Load(targetDir string) (*Result, error)
 - Reports parse errors to stderr via `packages.PrintErrors()`
 - Returns partial results when some packages/files fail to parse
 - Only returns error for catastrophic failures (not individual parse errors)
+- Deduplicates package variants (when includeTests is true)
+- Filters out synthetic .test packages
+- Sorts packages by import path for deterministic output
 
 **Error Cases**:
 - Returns error: Invalid pattern, driver initialization failure, nil targetDir
-- Returns nil error: Parse errors, missing imports, syntax errors (captured in Result.ErrorCount)
+- Returns nil error: Parse errors, missing imports, syntax errors (captured in errorCount)
 
 **Performance**:
 - Target: <5 seconds for 50,000 LOC
@@ -45,77 +52,49 @@ func Load(targetDir string) (*Result, error)
 
 **Example**:
 ```go
-result, err := parser.Load("/path/to/project")
+pkgs, errorCount, err := parser.Load("/path/to/project", true)
 if err != nil {
     // Catastrophic failure - exit 1
     return fmt.Errorf("failed to parse: %w", err)
 }
 
+// Calculate statistics
+totalPackages := len(pkgs)
+totalFiles := 0
+for _, pkg := range pkgs {
+    totalFiles += len(pkg.GoFiles)
+}
+
 // Partial success - exit 0
 fmt.Printf("Packages: %d, Files: %d, Errors: %d\n",
-    result.TotalPackages, result.TotalFiles, result.ErrorCount)
+    totalPackages, totalFiles, errorCount)
 ```
 
-### Result Type
+### Return Values
 
-```go
-type Result struct {
-    Packages      []*packages.Package
-    TotalPackages int
-    TotalFiles    int
-    ErrorCount    int
-    SkippedDirs   []string
-}
-```
-
-**Description**: Aggregates parsing statistics and package data.
-
-**Fields**:
-
-#### Packages
+#### Packages Slice
 - **Type**: `[]*packages.Package`
 - **Description**: All discovered packages with parsed AST data
 - **Contains**: Package name, import path, file paths, syntax trees, imports, errors, module info
+- **Ordering**: Sorted by import path (PkgPath) for deterministic output
 - **Usage**: Pass to graph construction phase for dependency analysis
-
-#### TotalPackages
-- **Type**: `int`
-- **Description**: Count of packages discovered
-- **Range**: `>= 0`
-- **Semantics**: `len(Packages)`
-
-#### TotalFiles
-- **Type**: `int`
-- **Description**: Count of .go files processed
-- **Range**: `>= 0`
-- **Semantics**: Sum of `len(pkg.GoFiles)` across all packages
-
-#### ErrorCount
-- **Type**: `int`
-- **Description**: Count of files that failed to parse
-- **Range**: `>= 0`
-- **Semantics**: Return value from `packages.PrintErrors()`
-
-#### SkippedDirs
-- **Type**: `[]string`
-- **Description**: Directories skipped due to permission errors
-- **Format**: Absolute directory paths
-- **Empty**: When all directories are accessible
-
-**Invariants**:
-- `len(Packages) == TotalPackages`
-- `TotalFiles >= TotalPackages` (at least one file per package)
-- `ErrorCount >= 0`
 
 **Usage**:
 ```go
-for _, pkg := range result.Packages {
+for _, pkg := range pkgs {
     fmt.Printf("Package: %s (%d files)\n", pkg.PkgPath, len(pkg.GoFiles))
     for _, err := range pkg.Errors {
         fmt.Printf("  Error: %s\n", err)
     }
 }
 ```
+
+#### Error Count
+- **Type**: `int`
+- **Description**: Number of packages with errors
+- **Range**: `>= 0`
+- **Source**: Return value from `packages.PrintErrors()`
+- **Semantics**: Represents packages that have parse or type-checking errors
 
 ## Dependency Contracts
 
@@ -128,7 +107,7 @@ targetDir, err := path.NewTargetDirectory(userInput)
 if err != nil {
     return err
 }
-result, err := parser.Load(targetDir.Path())
+pkgs, errorCount, err := parser.Load(targetDir.Path, includeTests)
 ```
 
 **Assumptions**:
@@ -141,18 +120,19 @@ result, err := parser.Load(targetDir.Path())
 The parser provides output for graph construction:
 
 ```go
-result, err := parser.Load(targetDir)
+pkgs, errorCount, err := parser.Load(targetDir, includeTests)
 if err != nil {
     return err
 }
 // Pass packages to graph builder
-graph := builder.Build(result.Packages)
+graph := builder.Build(pkgs)
 ```
 
 **Guarantees**:
 - Each package has parsed syntax trees in `Syntax` field
 - Import relationships are available in `Imports` field
 - Module information is available in `Module` field (if in a module)
+- Packages are sorted by import path for deterministic processing
 
 ## External Dependencies
 
@@ -185,11 +165,10 @@ Returned as `error` from `Load()`:
 
 ### Partial Failures (exit 0)
 
-Captured in `Result.ErrorCount`:
+Captured in `errorCount` return value:
 - Parse errors in Go files
 - Missing imports
 - Type-checking failures
-- Permission errors on subdirectories
 
 **Client Action**: Print statistics, exit zero
 
@@ -277,34 +256,48 @@ func Watch(targetDir string, onChange func(*Result)) error
 ## CLI Integration Contract
 
 ```go
-// In cli/parse.go
+// In cli/parse_command.go
 func (c *ParseCommand) Execute() error {
-    // 1. Validate directory
-    targetDir, err := path.NewTargetDirectory(c.targetPath)
-    if err != nil {
-        return err
-    }
-
-    // 2. Parse packages
-    result, err := parser.Load(targetDir.Path())
+    // 1. Parse packages
+    pkgs, errorCount, err := parser.Load(c.TargetDirectory.Path, c.IncludeTests)
     if err != nil {
         return err  // Catastrophic error - exit 1
     }
 
-    // 3. Print statistics - exit 0 even with parse errors
-    fmt.Printf("Packages found: %d\n", result.TotalPackages)
-    fmt.Printf("Files parsed: %d\n", result.TotalFiles)
-    if result.ErrorCount > 0 {
-        fmt.Printf("Parse errors: %d\n", result.ErrorCount)
-    }
-    if len(result.SkippedDirs) > 0 {
-        fmt.Printf("Skipped directories: %d\n", len(result.SkippedDirs))
-        for _, dir := range result.SkippedDirs {
-            fmt.Printf("  - %s\n", dir)
+    // 2. Calculate statistics
+    totalPackages := len(pkgs)
+    totalFiles := 0
+    var modulePath string
+
+    for _, pkg := range pkgs {
+        fmt.Printf("\nPackage: %s\n", pkg.PkgPath)
+        fmt.Printf("  Name: %s\n", pkg.Name)
+        fmt.Printf("  Files (%d):\n", len(pkg.GoFiles))
+        for _, file := range pkg.GoFiles {
+            fmt.Printf("    - %s\n", file)
+        }
+        if len(pkg.Errors) > 0 {
+            fmt.Printf("  Errors: %d\n", len(pkg.Errors))
+        }
+
+        totalFiles += len(pkg.GoFiles)
+        // Module path detection assumes all packages belong to same module
+        if pkg.Module != nil && modulePath == "" {
+            modulePath = pkg.Module.Path
         }
     }
 
-    // 4. TODO: Pass result.Packages to graph construction
+    // 3. Print summary - exit 0 even with parse errors
+    fmt.Printf("\n")
+    if modulePath != "" {
+        fmt.Printf("Module: %s\n", modulePath)
+    }
+    fmt.Printf("Loaded %d packages, parsed %d files\n", totalPackages, totalFiles)
+    if errorCount > 0 {
+        fmt.Fprintf(os.Stderr, "Encountered %d parse errors\n", errorCount)
+    }
+
+    // 4. TODO: Pass pkgs to graph construction
     return nil
 }
 ```

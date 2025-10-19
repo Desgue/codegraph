@@ -19,7 +19,7 @@ func NewParseCommand(args []string) (*ParseCommand, error) {
 	flagSet := flag.NewFlagSet("parse", flag.ContinueOnError)
 
 	outputFile := flagSet.String("output", "", "Output file path (required)")
-	includeTests := flagSet.Bool("include-tests", false, "Include test files in parsing")
+	includeTests := flagSet.Bool("include-tests", true, "Include test files in parsing")
 
 	if err := flagSet.Parse(args); err != nil {
 		return nil, err
@@ -56,18 +56,16 @@ func (pc *ParseCommand) Validate() error {
 }
 
 func (pc *ParseCommand) Execute() error {
-	pkgs, err := parser.Load(pc.TargetDirectory.Path)
+	pkgs, errorCount, err := parser.Load(pc.TargetDirectory.Path, pc.IncludeTests)
 	if err != nil {
 		return err
 	}
 
 	totalPackages := len(pkgs)
 	totalFiles := 0
-	errorCount := 0
 	var modulePath string
 
 	for _, pkg := range pkgs {
-
 		fmt.Printf("\nPackage: %s\n", pkg.PkgPath)
 		fmt.Printf("  Name: %s\n", pkg.Name)
 		fmt.Printf("  Files (%d):\n", len(pkg.GoFiles))
@@ -79,7 +77,8 @@ func (pc *ParseCommand) Execute() error {
 		}
 
 		totalFiles += len(pkg.GoFiles)
-		errorCount += len(pkg.Errors)
+		// Module path detection assumes all packages in the directory
+		// belong to the same Go module. Uses the first non-nil Module found.
 		if pkg.Module != nil && modulePath == "" {
 			modulePath = pkg.Module.Path
 		}

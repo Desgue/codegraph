@@ -2,17 +2,19 @@ package parser
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
 
-// Load parses all Go packages in targetDir and returns them.
+// Load parses all Go packages in targetDir and returns them with error count.
 // Returns error only for catastrophic failures (pattern parsing, driver issues).
 // Package-level parse errors are printed to stderr via packages.PrintErrors().
 // Each returned package contains Errors field with parse failures.
+// The error count returned is the number of packages with errors (from packages.PrintErrors).
 //
-// Deduplication: When Tests is true, go/packages returns both regular and test
+// Deduplication: When includeTests is true, go/packages returns both regular and test
 // variants of each package. This function deduplicates by keeping only the variant
 // with the most files (which includes both production and test files).
 // Synthetic .test packages are filtered out.
@@ -22,25 +24,30 @@ import (
 // - All comment nodes in file: pkg.Syntax[i].Comments
 // - Function/type comments: Access via ast.Walk on pkg.Syntax[i]
 // Comments are preserved with NeedSyntax flag for future documentation analysis.
-func Load(targetDir string) ([]*packages.Package, error) {
+func Load(targetDir string, includeTests bool) ([]*packages.Package, int, error) {
 	cfg := &packages.Config{
 		Mode: packages.NeedName | packages.NeedFiles |
 			packages.NeedSyntax | packages.NeedImports | packages.NeedTypes,
 		Dir:   targetDir,
-		Tests: true,
+		Tests: includeTests,
 	}
 
 	pkgs, err := packages.Load(cfg, "./...")
 	if err != nil {
-		return nil, fmt.Errorf("failed to load packages: %w", err)
+		return nil, 0, fmt.Errorf("failed to load packages: %w", err)
 	}
 
-	packages.PrintErrors(pkgs)
+	errorCount := packages.PrintErrors(pkgs)
 
 	// Deduplicate packages and filter synthetic test packages
 	deduplicated := deduplicatePackages(pkgs)
 
-	return deduplicated, nil
+	// Sort packages by import path for deterministic output
+	sort.Slice(deduplicated, func(i, j int) bool {
+		return deduplicated[i].PkgPath < deduplicated[j].PkgPath
+	})
+
+	return deduplicated, errorCount, nil
 }
 
 // deduplicatePackages removes duplicate package variants and synthetic test packages.
