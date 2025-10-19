@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -50,7 +51,7 @@ func deduplicatePackages(pkgs []*packages.Package) []*packages.Package {
 
 	for _, pkg := range pkgs {
 		// Skip synthetic test binary packages (e.g., package.test)
-		if len(pkg.PkgPath) > 5 && pkg.PkgPath[len(pkg.PkgPath)-5:] == ".test" {
+		if strings.HasSuffix(pkg.PkgPath, ".test") {
 			continue
 		}
 
