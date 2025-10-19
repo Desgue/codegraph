@@ -86,6 +86,58 @@ When violating principles (e.g., performance-critical code), document:
 - **Constitution compliance**: All design decisions must align with constitution principles
 - **Documentation-first**: Specifications drive implementation, not the reverse
 
+## Development Commands
+
+### Build & Run
+```bash
+go build -o codegraph .                    # Build binary
+./codegraph parse <directory> [flags]       # Run parser on directory
+```
+
+### Testing
+```bash
+go test ./...                               # Run all tests
+go test -v ./...                            # Run with verbose output
+go test -cover ./...                        # Run with coverage
+```
+
+### Dependencies
+This project uses **standard library only** - no external dependencies required. Uses `go/parser`, `go/ast`, `go/token` for AST analysis and `encoding/xml` for GraphML export.
+
+## Architecture Overview
+
+CodeGraph follows a three-component pipeline architecture:
+
+1. **Parser Component** (`go/parser`, `go/ast`, `go/token`)
+   - Discovers .go files recursively
+   - Parses source files to AST
+   - Handles syntax errors gracefully (continues with partial graph)
+
+2. **Graph Builder Component** (in-memory graph structure)
+   - Walks AST to extract entities (packages, types, functions, methods)
+   - Creates nodes for: Package, File, Function, Method, Struct, Interface, Field, TypeAlias, Constant, Variable, Import
+   - Builds relationships: IMPORTS, DEFINES, DECLARES, HAS_FIELD, HAS_METHOD, RECEIVES_ON, CALLS, EMBEDS
+   - Uses **syntactic analysis only** (no `go/types`) - creates UnresolvedCall nodes for ambiguous method calls
+
+3. **Exporter Component** (GraphML XML generation)
+   - Serializes in-memory graph to GraphML format
+   - Output is compatible with Neo4j, Gephi, Cytoscape, and other graph tools
+   - Self-describing XML with embedded schema
+
+### Call Graph Strategy
+
+- **Resolved calls**: Direct function calls, qualified package calls (`pkg.Func()`), method calls with literal receivers
+- **UnresolvedCall nodes**: Method calls on variables, interface calls, function pointers where receiver type is ambiguous
+- No type resolution - explicit about limitations rather than guessing
+
+### Output Format
+
+Generated `.graphml` files contain:
+- All syntactic information from Go source code
+- Source location metadata (file, line, column) on all nodes
+- Statistics metadata (node/edge counts, parse time)
+- Designed for import into graph databases or analysis tools
+
 ## Git Workflow
 
 - Main branch: `main`
