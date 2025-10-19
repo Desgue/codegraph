@@ -27,8 +27,13 @@ func NewTargetDirectory(inputPath string) (*TargetDirectory, error) {
 		resolvedPath = absolutePath
 	}
 
+	canonicalPath, err := filepath.EvalSymlinks(resolvedPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve symlinks for '%s': %w", resolvedPath, err)
+	}
+
 	targetDirectory := &TargetDirectory{
-		Path: resolvedPath,
+		Path: canonicalPath,
 	}
 
 	if err := targetDirectory.Validate(); err != nil {

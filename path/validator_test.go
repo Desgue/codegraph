@@ -58,8 +58,8 @@ func TestNewTargetDirectory_NonexistentDirectory(t *testing.T) {
 
 	assert.Nil(t, targetDirectory)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "directory does not exist")
-	assert.Contains(t, err.Error(), nonexistentPath)
+	assert.Contains(t, err.Error(), "failed to resolve symlinks")
+	assert.Contains(t, err.Error(), "no such file or directory")
 }
 
 func TestNewTargetDirectory_FileInsteadOfDirectory(t *testing.T) {
