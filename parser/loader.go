@@ -11,6 +11,11 @@ import (
 // Package-level parse errors are printed to stderr via packages.PrintErrors().
 // Each returned package contains Errors field with parse failures.
 //
+// Deduplication: When Tests is true, go/packages returns both regular and test
+// variants of each package. This function deduplicates by keeping only the variant
+// with the most files (which includes both production and test files).
+// Synthetic .test packages are filtered out.
+//
 // Comment Access Patterns:
 // - Package-level comments: pkg.Syntax[i].Doc
 // - All comment nodes in file: pkg.Syntax[i].Comments
@@ -31,5 +36,39 @@ func Load(targetDir string) ([]*packages.Package, error) {
 
 	packages.PrintErrors(pkgs)
 
-	return pkgs, nil
+	// Deduplicate packages and filter synthetic test packages
+	deduplicated := deduplicatePackages(pkgs)
+
+	return deduplicated, nil
+}
+
+// deduplicatePackages removes duplicate package variants and synthetic test packages.
+// When Tests is true, go/packages returns multiple variants of the same package.
+// This keeps only the variant with the most files (test variant has production + test files).
+func deduplicatePackages(pkgs []*packages.Package) []*packages.Package {
+	seen := make(map[string]*packages.Package)
+
+	for _, pkg := range pkgs {
+		// Skip synthetic test binary packages (e.g., package.test)
+		if len(pkg.PkgPath) > 5 && pkg.PkgPath[len(pkg.PkgPath)-5:] == ".test" {
+			continue
+		}
+
+		if existing, found := seen[pkg.PkgPath]; found {
+			// Keep the variant with more files (test variant includes production + test)
+			if len(pkg.GoFiles) > len(existing.GoFiles) {
+				seen[pkg.PkgPath] = pkg
+			}
+		} else {
+			seen[pkg.PkgPath] = pkg
+		}
+	}
+
+	// Convert map back to slice
+	result := make([]*packages.Package, 0, len(seen))
+	for _, pkg := range seen {
+		result = append(result, pkg)
+	}
+
+	return result
 }

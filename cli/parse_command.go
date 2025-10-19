@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/Desgue/codegraph/parser"
 	"github.com/Desgue/codegraph/path"
@@ -68,10 +67,6 @@ func (pc *ParseCommand) Execute() error {
 	var modulePath string
 
 	for _, pkg := range pkgs {
-		// Skip synthetic test binary packages (e.g., package.test)
-		if strings.HasSuffix(pkg.PkgPath, ".test") {
-			continue
-		}
 
 		fmt.Printf("\nPackage: %s\n", pkg.PkgPath)
 		fmt.Printf("  Name: %s\n", pkg.Name)
