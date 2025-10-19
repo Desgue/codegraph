@@ -1,50 +1,141 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+Version: 0.0.0 → 1.0.0
+Rationale: Initial constitution creation (MAJOR version for first release)
+
+Modified principles:
+- NEW: Clear Variable Naming
+- NEW: Function Size Discipline
+- NEW: Domain-Driven Design
+- NEW: Go Idiomatic Practices
+- NEW: Simplicity Principles (KISS & YAGNI)
+- NEW: Git Commit Standards
+- NEW: Package Naming Conventions
+
+Added sections:
+- Core Principles (7 principles)
+- Governance
+
+Templates requiring updates:
+✅ plan-template.md - Constitution Check section already present
+✅ spec-template.md - No constitution-specific updates needed
+✅ tasks-template.md - No constitution-specific updates needed
+
+Follow-up TODOs: None
+-->
+
+# CodeGraph Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Clear Variable Naming
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Variable names MUST be descriptive and convey intent without requiring additional context. Avoid abbreviations, single-letter names (except standard loop indices), and ambiguous terms.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+**Rationale**: Code is read far more often than written. Clear names eliminate cognitive load and reduce bugs from misunderstood state.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. Function Size Discipline
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+Functions MUST be small to medium-sized. A function should do one thing well. If a function requires scrolling to understand, it should be refactored.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+**Rationale**: Small functions are easier to test, understand, debug, and reuse. They enforce single responsibility and reduce cyclomatic complexity.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### III. Domain-Driven Design (No Anemic Model)
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Domain logic MUST reside in domain entities, not scattered across services. Anemic models (data structures with no behavior) are prohibited unless justified.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+**Rationale**: Behavior belongs with data. Anemic models lead to procedural code disguised as OOP, making business logic hard to locate and maintain.
+
+### IV. Go Idiomatic Practices
+
+Go code MUST follow Go paradigms, NOT object-oriented or functional programming patterns from other languages. Adapt concepts to Go's design philosophy.
+
+**Rules**:
+- Use `any` instead of `interface{}` for empty interfaces
+- Use modern `for range` syntax where applicable
+- Embrace composition over inheritance
+- Prefer interfaces for behavior contracts, structs for data
+- Keep error handling explicit; avoid exception-like patterns
+- Use goroutines and channels idiomatically, not as thread/promise replacements
+
+**Rationale**: Go has deliberate design decisions. Forcing other paradigms creates unidiomatic, hard-to-maintain code that fights the language.
+
+### V. Simplicity Principles (KISS & YAGNI) (NON-NEGOTIABLE)
+
+**KISS (Keep It Simple, Stupid)**: Solutions MUST be as simple as possible, but no simpler. Complexity requires explicit justification.
+
+**YAGNI (You Aren't Gonna Need It)**: Do not implement features, abstractions, or infrastructure until they are actually needed. No speculative generalization.
+
+**Enforcement**:
+- All abstractions must solve a current, concrete problem
+- Premature optimization is forbidden without profiling data
+- Generic solutions allowed only when multiple concrete cases exist
+
+**Rationale**: Complexity is the enemy of maintainability. Most "future-proofing" solves problems that never materialize while creating immediate maintenance burden.
+
+### VI. Git Commit Standards (NON-NEGOTIABLE)
+
+Commits MUST follow Conventional Commits format without author attribution.
+
+**Format**: `<type>(<scope>): <subject>`
+
+**Rules**:
+- One-line commits (default); multi-line only when explicitly needed
+- NO "authored by", "co-authored by", or LLM attribution
+- NO mentions of tools, assistants, or generation method
+- Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `style`, `build`, `ci`
+
+**Example**:
+```
+feat(parser): add support for multi-line strings
+fix(api): handle null pointer in user lookup
+refactor(storage): simplify cache invalidation logic
+```
+
+**Rationale**: Commit history is a project artifact, not a credits roll. Consistent format enables tooling (changelogs, semver automation). Attribution lives in Git metadata (author field), not messages.
+
+### VII. Package Naming Conventions
+
+Package names MUST be short, meaningful, and designed to work with exported types to form readable identifiers.
+
+**Rules**:
+- Prefer single-word package names: `parser`, `graph`, `index`, `cache`
+- Avoid `util`, `common`, `helper`, `lib`, `base` (unless specific purpose)
+- Package name + type name should read naturally: `graph.Node`, `cache.Entry`, `parser.Token`
+- No underscores or mixed caps: `httputil` (not `http_util` or `httpUtil`)
+
+**Example**:
+```go
+// Good
+import "codegraph/parser"
+token := parser.Token{}
+
+// Bad
+import "codegraph/parser_utilities"
+token := parser_utilities.ParserToken{}
+```
+
+**Rationale**: Go encourages package-qualified identifiers. Short, descriptive package names reduce stutter (`parser.Parser` is fine, `parser.ParserParser` is not) and improve readability across the codebase.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes all other coding practices and preferences. All code reviews, pull requests, and design decisions MUST verify compliance with these principles.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Amendment Process**:
+1. Proposed changes require documented rationale and impact analysis
+2. Violations of principles must be explicitly justified in code/PR comments
+3. Constitution updates require version bump per semantic versioning
+
+**Complexity Justification**:
+When a principle must be violated (e.g., performance-critical code requires complexity), document in code comments:
+```go
+// COMPLEXITY JUSTIFIED: Profiling shows 40% CPU in this path.
+// Simpler recursive approach causes stack overflow at 10k+ nodes.
+```
+
+**Compliance Review**:
+- PRs flagged for principle violations MUST include justification or remediation
+- Regular audits to identify drift from principles
+- Constitution alignment checked in planning phase (see plan-template.md)
+
+**Version**: 1.0.0 | **Ratified**: 2025-10-19 | **Last Amended**: 2025-10-19
